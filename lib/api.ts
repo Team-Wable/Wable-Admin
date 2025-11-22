@@ -78,13 +78,14 @@ class ApiClient {
   }
 
   async login(socialToken: string, socialPlatform: string): Promise<ApiResponse<AuthResponse>> {
-    const response = await fetch(`${API_BASE_URL}/api/v2/auth`, {
+    // 프록시 API 사용 (CORS 우회)
+    const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': socialToken,
       },
       body: JSON.stringify({
+        socialToken,
         socialPlatform,
       }),
     })
@@ -108,10 +109,18 @@ class ApiClient {
   }
 
   async postContent(content: ContentPostRequest): Promise<ApiResponse<unknown>> {
-    return this.request('/api/v1/content', {
+    const token = this.getAccessToken()
+
+    const response = await fetch('/api/content', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
       body: JSON.stringify(content),
     })
+
+    return response.json()
   }
 
   async getContents(cursor: number = -1): Promise<ApiResponse<unknown>> {
